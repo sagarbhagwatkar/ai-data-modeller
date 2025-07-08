@@ -1,0 +1,6 @@
+customer_id,first_name,last_name,email,phone,address,city,state,zip_code,created_date
+1,John,Doe,john.doe@email.com,555-0123,123 Main St,New York,NY,10001,2023-01-15
+2,Jane,Smith,jane.smith@email.com,555-0124,456 Oak Ave,Los Angeles,CA,90210,2023-01-16
+3,Bob,Johnson,bob.johnson@email.com,555-0125,789 Pine St,Chicago,IL,60601,2023-01-17
+4,Alice,Williams,alice.williams@email.com,555-0126,321 Elm Dr,Houston,TX,77001,2023-01-18
+5,Charlie,Brown,charlie.brown@email.com,555-0127,654 Maple Ln,Phoenix,AZ,85001,2023-01-19

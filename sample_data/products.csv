@@ -1,0 +1,7 @@
+product_id,product_name,category,price,stock_quantity,supplier_id
+201,Wireless Headphones,Electronics,79.99,150,1001
+202,Running Shoes,Footwear,129.99,75,1002
+203,Coffee Maker,Kitchen,89.99,100,1003
+204,Laptop Stand,Electronics,45.99,200,1001
+205,Yoga Mat,Sports,34.99,300,1004
+206,Bluetooth Speaker,Electronics,65.99,125,1001
