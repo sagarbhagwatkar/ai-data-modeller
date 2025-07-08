@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def create_erd_diagram(dataframes: Dict[str, pd.DataFrame]) -> Optional[str]:
     """
-    Create an Entity Relationship Diagram using Graphviz.
+    Create an Entity Relationship Diagram using Graphviz with AI-powered primary key detection.
     
     Args:
         dataframes: Dictionary of filename -> DataFrame
@@ -26,26 +26,36 @@ def create_erd_diagram(dataframes: Dict[str, pd.DataFrame]) -> Optional[str]:
     """
     try:
         import graphviz
+        from llm_analysis import analyze_primary_keys_with_ai
         
         # Create directed graph
         dot = graphviz.Digraph(comment='ERD Diagram')
         dot.attr(rankdir='TB', size='12,8')
         dot.attr('node', shape='record', style='filled', fillcolor='lightblue')
         
+        # Get AI-powered primary key recommendations
+        ai_pk_analysis = analyze_primary_keys_with_ai(dataframes)
+        
         # Add tables as nodes
         primary_keys = {}
         for filename, df in dataframes.items():
             table_name = clean_table_name(filename)
             
-            # Get primary key candidates
-            pk_candidates = detect_primary_keys(df)
-            pk_column = None
-            if pk_candidates:
-                pk_column = max(pk_candidates.items(), key=lambda x: x[1])[0]
-                primary_keys[table_name] = pk_column
+            # Get AI-recommended primary key
+            table_key = table_name.replace('.csv', '').replace('.xlsx', '')
+            table_key = table_key.replace('.json', '')
+            ai_recommendation = ai_pk_analysis.get(table_key, {})
+            recommended_pk = ai_recommendation.get('recommended_key', [])
+            pk_type = ai_recommendation.get('primary_key_type', 'none')
+            
+            # Store primary key info for relationships
+            if recommended_pk:
+                primary_keys[table_name] = recommended_pk
             
             # Create table node with columns
-            table_label = create_table_label(df, table_name, pk_column)
+            table_label = create_table_label_with_ai(
+                df, table_name, recommended_pk, pk_type
+            )
             dot.node(table_name, table_label)
         
         # Add relationships as edges
@@ -84,6 +94,48 @@ def create_erd_diagram(dataframes: Dict[str, pd.DataFrame]) -> Optional[str]:
     except Exception as e:
         logger.error(f"Error creating ERD: {str(e)}")
         return create_fallback_erd(dataframes)
+
+
+def create_table_label_with_ai(
+    df: pd.DataFrame, 
+    table_name: str, 
+    primary_key_columns: List[str],
+    pk_type: str
+) -> str:
+    """
+    Create a formatted label for a table node in the ERD using AI recommendations.
+    
+    Args:
+        df: DataFrame representing the table
+        table_name: Name of the table
+        primary_key_columns: List of primary key column names
+        pk_type: Type of primary key ('single', 'composite', 'none')
+        
+    Returns:
+        Formatted label string
+    """
+    # Table header
+    label_parts = [f"{{<table_name> {table_name.upper()}|"]
+    
+    # Add columns
+    for col in df.columns:
+        col_type = str(df[col].dtype)
+        
+        # Mark primary key columns
+        if col in primary_key_columns:
+            if pk_type == 'composite' and len(primary_key_columns) > 1:
+                # Show composite key with different symbol
+                label_parts.append(f"<{col}> 🔗 {col} ({col_type})|")
+            else:
+                # Single primary key
+                label_parts.append(f"<{col}> 🔑 {col} ({col_type})|")
+        else:
+            label_parts.append(f"<{col}> {col} ({col_type})|")
+    
+    # Remove the last separator and close the label
+    label = ''.join(label_parts[:-1]) + label_parts[-1][:-1] + "}}"
+    
+    return label
 
 
 def create_table_label(
@@ -164,6 +216,7 @@ def get_edge_style(relationship_type: str) -> Dict[str, str]:
 def create_fallback_erd(dataframes: Dict[str, pd.DataFrame]) -> str:
     """
     Create a text-based fallback ERD when Graphviz is not available.
+    Uses AI-powered primary key detection.
     
     Args:
         dataframes: Dictionary of filename -> DataFrame
@@ -171,6 +224,12 @@ def create_fallback_erd(dataframes: Dict[str, pd.DataFrame]) -> str:
     Returns:
         HTML string with text-based ERD
     """
+    try:
+        from llm_analysis import analyze_primary_keys_with_ai
+        ai_pk_analysis = analyze_primary_keys_with_ai(dataframes)
+    except Exception:
+        ai_pk_analysis = {}
+    
     html_parts = [
         "<div style='font-family: monospace; padding: 20px;'>",
         "<h3>Entity Relationship Diagram (Text Format)</h3>",
@@ -181,14 +240,23 @@ def create_fallback_erd(dataframes: Dict[str, pd.DataFrame]) -> str:
     # Show tables
     for filename, df in dataframes.items():
         table_name = clean_table_name(filename)
-        pk_candidates = detect_primary_keys(df)
+        
+        # Get AI-recommended primary key
+        table_key = table_name.replace('.csv', '').replace('.xlsx', '')
+        table_key = table_key.replace('.json', '')
+        ai_recommendation = ai_pk_analysis.get(table_key, {})
+        recommended_pk = ai_recommendation.get('recommended_key', [])
+        pk_type = ai_recommendation.get('primary_key_type', 'none')
         
         html_parts.append(f"\n┌─ {table_name.upper()} ─┐")
         
         for col in df.columns:
             col_type = str(df[col].dtype)
-            if pk_candidates and col in pk_candidates:
-                html_parts.append(f"│ 🔑 {col} ({col_type})")
+            if col in recommended_pk:
+                if pk_type == 'composite' and len(recommended_pk) > 1:
+                    html_parts.append(f"│ 🔗 {col} ({col_type}) [PK]")
+                else:
+                    html_parts.append(f"│ 🔑 {col} ({col_type}) [PK]")
             else:
                 html_parts.append(f"│   {col} ({col_type})")
         
