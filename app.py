@@ -314,66 +314,28 @@ def display_export_options(dataframes: Dict[str, pd.DataFrame], enable_normaliza
     """Display export options."""
     st.header("💾 Export Options")
     
-    col1, col2 = st.columns(2)
+    st.subheader("📄 SQL DDL Export")
     
-    with col1:
-        st.subheader("📄 SQL DDL Export")
-        
-        if st.button("Generate SQL DDL", type="primary"):
-            with st.spinner("Generating SQL statements with AI analysis..."):
-                try:
-                    ddl_statements = generate_ddl_with_ai(dataframes, enable_normalization)
-                    
-                    st.code(ddl_statements, language="sql")
-                    
-                    # Download button
-                    st.download_button(
-                        label="💾 Download SQL Script",
-                        data=ddl_statements,
-                        file_name="data_model.sql",
-                        mime="text/sql"
-                    )
-                    
-                except Exception as e:
-                    st.error(f"Error generating DDL: {str(e)}")
-    
-    with col2:
-        st.subheader("📋 Metadata Export")
-        
-        if st.button("Generate Metadata JSON"):
-            with st.spinner("Generating metadata..."):
-                try:
-                    metadata = {
-                        "files": {},
-                        "relationships": [],
-                        "primary_keys": {},
-                        "generated_at": pd.Timestamp.now().isoformat()
-                    }
-                    
-                    # Add file metadata
-                    for filename, df in dataframes.items():
-                        metadata["files"][filename] = {
-                            "rows": int(df.shape[0]),
-                            "columns": int(df.shape[1]),
-                            "column_types": df.dtypes.astype(str).to_dict(),
-                            "primary_key_candidates": detect_primary_keys(df)
-                        }
-                    
-                    import json
-                    metadata_json = json.dumps(metadata, indent=2)
-                    
-                    st.code(metadata_json, language="json")
-                    
-                    # Download button
-                    st.download_button(
-                        label="💾 Download Metadata",
-                        data=metadata_json,
-                        file_name="data_model_metadata.json",
-                        mime="application/json"
-                    )
-                    
-                except Exception as e:
-                    st.error(f"Error generating metadata: {str(e)}")
+    if st.button("Generate SQL DDL", type="primary"):
+        with st.spinner("Generating SQL statements with AI analysis..."):
+            try:
+                ddl_statements = generate_ddl_with_ai(
+                    dataframes, enable_normalization
+                )
+                
+                st.code(ddl_statements, language="sql")
+                
+                # Download button
+                st.download_button(
+                    label="💾 Download SQL Script",
+                    data=ddl_statements,
+                    file_name="data_model.sql",
+                    mime="text/sql"
+                )
+                
+            except Exception as e:
+                st.error(f"Error generating DDL: {str(e)}")
+
 
 if __name__ == "__main__":
     main()
