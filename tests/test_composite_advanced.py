@@ -3,6 +3,10 @@
 Create sample data specifically designed to need composite keys.
 """
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pandas as pd
 from modeling import detect_primary_keys, detect_composite_keys, generate_ddl
 
