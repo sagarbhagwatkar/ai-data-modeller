@@ -117,7 +117,6 @@ def find_similar_columns(
     Returns:
         List of column groups that are potentially similar
     """
-    from fuzzywuzzy import fuzz
     from utils import get_column_similarity_score
     
     all_columns = []
@@ -306,53 +305,6 @@ def detect_relationships_with_llm(
     except Exception as e:
         logger.error(f"Error detecting relationships with LLM: {str(e)}")
         return []
-
-
-def generate_normalization_suggestions(
-    dataframes: Dict[str, pd.DataFrame]
-) -> str:
-    """
-    Use LLM to suggest database normalization improvements.
-    
-    Args:
-        dataframes: Dictionary of filename -> DataFrame
-        
-    Returns:
-        Normalization suggestions as formatted text
-    """
-    try:
-        table_summary = prepare_table_summary(dataframes)
-        
-        prompt = f"""
-        Analyze these database tables for normalization opportunities:
-
-        {table_summary}
-
-        Provide specific recommendations for:
-        1. First Normal Form (1NF) compliance
-        2. Second Normal Form (2NF) improvements
-        3. Third Normal Form (3NF) optimizations
-        4. Suggested table splits or merges
-        5. Index recommendations
-
-        Format your response with clear sections and specific SQL-like examples.
-        """
-        
-        response = openai.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4"),
-            messages=[
-                {"role": "system", "content": "You are a database normalization expert."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=2000,
-            temperature=0.1
-        )
-        
-        return response.choices[0].message.content
-        
-    except Exception as e:
-        logger.error(f"Error generating normalization suggestions: {str(e)}")
-        return f"Error generating suggestions: {str(e)}"
 
 
 def prepare_schema_summary(profiles: Dict[str, Dict]) -> str:
